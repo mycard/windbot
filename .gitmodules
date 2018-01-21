@@ -1,0 +1,3 @@
+[submodule "ygosharp"]
+	path = ygosharp
+	url = https://github.com/moecube/ygosharp
