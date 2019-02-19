@@ -25,25 +25,23 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.SpellSet);
         }
 
-        IList<ClientCard> lastpick = new List<ClientCard>();
+        IList<ClientCard> picked = new List<ClientCard>();
         public override IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, int hint, bool cancelable)
         {
-            if (hint == 507)
+            if (hint == 507 && Duel.Turn == 1)
             {
                 Logger.DebugWriteLine("Call SelectCard with hint 507");
-                if (cards.Count == 4)
+                if (cancelable)
                 {
-                    if (lastpick.Count == 0)
-                    {
-                        lastpick = cards;
-                    }
-                    else
-                    {
-                        IList<ClientCard> now_select = lastpick;
-                        lastpick.Clear();
-                        return now_select;
-                    }
+                    IList<ClientCard> submit = picked;
+                    picked.Clear();
+                    return submit;
                 }
+                ClientCard thispick = cards[Program.Rand.Next(cards.Count)];
+                IList <ClientCard> group = new List<ClientCard>();
+                group.Add(thispick);
+                picked.Add(thispick);
+                return group;
             }
             if (Duel.Phase == DuelPhase.BattleStart)
                 return null;
