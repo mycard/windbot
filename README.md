@@ -44,6 +44,9 @@ False to turn the chat of bot off.
 `Debug`
 Print verbose log of card movement info. False at default. (May be updated in future)
 
+`AutoQuit`
+Automatically quit the room when opponent leaves. Default `false`.
+
 `ServerMode` and `ServerPort`  
 WindBot can run as a "server", provide a http interface to create bot.
 
@@ -75,6 +78,8 @@ WindBot can run as a "server", provide a http interface to create bot.
 
 * DarkMagician
 
+* Dragun
+
 * Dragunity
 
 * GrenMajuThunderBoarder
@@ -99,7 +104,7 @@ WindBot can run as a "server", provide a http interface to create bot.
 
 * ST1732
 
-* Toadally Awesome (old lflist, master rule 3 only)
+* Toadally Awesome
 
 * Trickstar
 
@@ -107,7 +112,7 @@ WindBot can run as a "server", provide a http interface to create bot.
 
 * Zexal Weapons
 
-* Zoodiac (old lflist, master rule 3 only)
+* Zoodiac
 
 ### Unfinished decks
 
@@ -269,3 +274,8 @@ The parameters are same as commandlines, but low cased.
 * Update the known card enums
 
 * More default common cards executor
+
+### Features in this branch
+
+* Added support for Group.SelectUnselect. This is mainly to support KoishiPro or EdoPro.
+

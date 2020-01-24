@@ -150,7 +150,8 @@ namespace WindBot.Game
             /*int rule = */ packet.ReadByte();
             /*int mode = */ packet.ReadByte();
             int duel_rule = packet.ReadByte();
-            _ai.Duel.IsNewRule = (duel_rule == 4);
+            _ai.Duel.IsNewRule = (duel_rule >= 4);
+            _ai.Duel.IsNewRule2020 = (duel_rule >= 5);
             BinaryWriter deck = GamePacketFactory.Create(CtosMessage.UpdateDeck);
             deck.Write(Deck.Cards.Count + Deck.ExtraCards.Count);
             deck.Write(Deck.SideCards.Count);
@@ -225,6 +226,10 @@ namespace WindBot.Game
             {
                 _room.IsReady[pos] = false;
                 _room.Names[pos] = null;
+                if (state == (int)PlayerChange.Leave && Config.GetBool("AutoQuit", false)) {
+                    Connection.Close();
+                    return;
+                }
             }
 
             if (_room.IsHost && _room.IsReady[0] && _room.IsReady[1])
@@ -285,8 +290,12 @@ namespace WindBot.Game
             string message = packet.ReadUnicode(256);
             string myName = (player != 0) ? _room.Names[1] : _room.Names[0];
             string otherName = (player == 0) ? _room.Names[1] : _room.Names[0];
-            if (player < 4)
-                Logger.DebugWriteLine(otherName + " say to " + myName + ": " + message);
+			if (_debug) {
+				if (player < 4)
+					Logger.WriteLine(otherName + " say to " + myName + ": " + message);
+				else
+					Logger.WriteLine("Server say to " + myName + ": " + message);
+			}
         }
 
         private void OnErrorMsg(BinaryReader packet)
@@ -347,7 +356,8 @@ namespace WindBot.Game
             _duel.IsFirst = (type & 0xF) == 0;
             _duel.Turn = 0;
             int duel_rule = packet.ReadByte();
-            _ai.Duel.IsNewRule = (duel_rule == 4);
+            _ai.Duel.IsNewRule = (duel_rule >= 4);
+            _ai.Duel.IsNewRule2020 = (duel_rule >= 5);
             _duel.Fields[GetLocalPlayer(0)].LifePoints = packet.ReadInt32();
             _duel.Fields[GetLocalPlayer(1)].LifePoints = packet.ReadInt32();
             int deck = packet.ReadInt16();
@@ -1275,13 +1285,13 @@ namespace WindBot.Game
                 if ((selected & filter) > 0)
                     filter &= selected;
 
-                if ((filter & Zones.z6) != 0) resp[2] = 6;
-                else if ((filter & Zones.z5) != 0) resp[2] = 5;
-                else if ((filter & Zones.z2) != 0) resp[2] = 2;
+                if ((filter & Zones.z2) != 0) resp[2] = 2;
                 else if ((filter & Zones.z1) != 0) resp[2] = 1;
                 else if ((filter & Zones.z3) != 0) resp[2] = 3;
                 else if ((filter & Zones.z0) != 0) resp[2] = 0;
                 else if ((filter & Zones.z4) != 0) resp[2] = 4;
+                else if ((filter & Zones.z6) != 0) resp[2] = 6;
+                else if ((filter & Zones.z5) != 0) resp[2] = 5;
             }
             else
             {
