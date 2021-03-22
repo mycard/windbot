@@ -32,8 +32,9 @@ namespace WindBot.Game
         public int RealPower { get; set; }
         public List<int> Overlays { get; private set; }
         public int Owner { get; private set; }
-        public int Controller { get; private set; }
+        public int Controller { get; set; }
         public int Disabled { get; private set; }
+        public int ProcCompleted { get; private set; }
         public int SelectSeq { get; set; }
         public int OpParam1 { get; set; }
         public int OpParam2 { get; set; }
@@ -145,7 +146,10 @@ namespace WindBot.Game
                 Owner = duel.GetLocalPlayer(packet.ReadInt32());
             if ((flag & (int)Query.Status) != 0) {
                 int status = packet.ReadInt32();
-                Disabled = status & 0x0001;
+                const int STATUS_DISABLED = 0x0001;
+                const int STATUS_PROC_COMPLETE = 0x0008;
+                Disabled = status & STATUS_DISABLED;
+                ProcCompleted = status & STATUS_PROC_COMPLETE;
             }
             if ((flag & (int)Query.LScale) != 0)
                 LScale = packet.ReadInt32();
@@ -247,6 +251,11 @@ namespace WindBot.Game
             return (Attribute & (int)attribute) != 0;
         }
 
+        public bool HasRace(CardRace race)
+        {
+            return (Race & (int)race) != 0;
+        }
+
         public bool HasSetcode(int setcode)
         {
             if (Data == null) return false;
@@ -312,6 +321,11 @@ namespace WindBot.Game
             return Disabled != 0;
         }
 
+        public bool IsCanRevive()
+        {
+            return ProcCompleted != 0 || !(IsExtraCard() || HasType(CardType.Ritual) || HasType(CardType.SpSummon));
+        }
+
         public bool IsCode(int id)
         {
             return Id == id || Alias != 0 && Alias == id;
@@ -325,6 +339,11 @@ namespace WindBot.Game
         public bool IsCode(params int[] ids)
         {
             return ids.Contains(Id) || Alias != 0 && ids.Contains(Alias);
+        }
+
+        public bool IsOriginalCode(int id)
+        {
+            return Id == id || Alias - Id < 10 && Alias == id;
         }
 
         public bool HasXyzMaterial()

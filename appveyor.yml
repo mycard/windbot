@@ -1,9 +1,5 @@
 version: '{build}'
 
-environment:
-  access_token:
-    secure: DOOS4g7CT8ctOgiMr62K56qQ1FO6s2ESpqNZlhf8F4nomemvvwxV/pRj9nbKmtjR
-
 platform: x86
 configuration: Release
 
@@ -12,12 +8,11 @@ build:
     parallel: true
 
 after_build:
-  - mv bin\Release WindBot
-  - rm WindBot\WindBot.exe.config
-  - mv BotWrapper\bin\Release\Bot.exe .
-  - mv BotWrapper\bin\Release\bot.conf .
-  - 7z a WindBot.7z WindBot Bot.exe bot.conf
-
+  - mv -f bin\Release WindBot
+  - rm -rf WindBot\WindBot.exe.config
+  - mv -f BotWrapper\bin\Release\Bot.exe .
+  - mv -f BotWrapper\bin\Release\bot.conf .
+  - 7z a -mx9 WindBot.7z WindBot Bot.exe bot.conf
 test: off
 
 artifacts:
@@ -25,9 +20,12 @@ artifacts:
     name: WindBot
 
 deploy:
-    description: 'Automatic build by Appveyor.'
-    provider: GitHub
-    auth_token: $(access_token)
-    force_update: true
-    on:
-        appveyor_repo_tag: true
+  release: latest
+  description: 'Automatic build commit $(APPVEYOR_REPO_COMMIT) $(APPVEYOR_REPO_COMMIT_TIMESTAMP)'
+  provider: GitHub
+  force_update: true
+  auth_token:
+    secure: EQ9miMjfX/QAoBvgc6D+JLmHatLyxOEKZ/uo68QijxWW5Gp4MzB/pOH9+u2GlDVO
+  on:
+    branch: master
+

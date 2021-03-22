@@ -20,6 +20,11 @@ The nickname for the bot.
 `Deck`  
 The deck to be used by the bot. Available decks are listed below. Keep empty to use random deck.
 
+`DeckFile`  
+The deck file (.ydk) to be used by the bot. Will be set by `Deck` automatically, but you can override it.
+
+Note: Most cards not in the original deck are unknown to the bot, and won't be summoned or activated in the duel.
+
 `Dialog`  
 The dialog texts to be used by the bot. See Dialogs folder for list.
 
@@ -44,6 +49,9 @@ False to turn the chat of bot off.
 `Debug`
 Print verbose log of card movement info. False at default. (May be updated in future)
 
+`AutoQuit`
+Automatically quit the room when opponent leaves. Default `false`.
+
 `ServerMode` and `ServerPort`  
 WindBot can run as a "server", provide a http interface to create bot.
 
@@ -65,13 +73,29 @@ WindBot can run as a "server", provide a http interface to create bot.
 
 **Normal**:
 
+* Altergeist
+
 * Blue-Eyes
+
+* BlueEyesMaxDragon
 
 * ChainBurn
 
 * DarkMagician
 
+* Dragun
+
 * Dragunity
+
+* GrenMajuThunderBoarder
+
+* Level VIII
+
+* LightswornShaddoldinosour
+
+* Orcust
+
+* Phantasm
 
 * Qliphort
 
@@ -79,11 +103,13 @@ WindBot can run as a "server", provide a http interface to create bot.
 
 * Rank V
 
+* Salamangreat
+
 * SkyStriker
 
 * ST1732
 
-* Toadally Awesome (old lflist, master rule 3 only)
+* Toadally Awesome
 
 * Trickstar
 
@@ -91,7 +117,7 @@ WindBot can run as a "server", provide a http interface to create bot.
 
 * Zexal Weapons
 
-* Zoodiac (old lflist, master rule 3 only)
+* Zoodiac
 
 ### Unfinished decks
 
@@ -107,10 +133,13 @@ WindBot can run as a "server", provide a http interface to create bot.
 
 * Lightsworn
 
-* LightswornShaddoldinosour
-
 * Nekroz
 
+### AI Template Generator
+
+A Java program which generate executor code from deck, made by Levyaton.
+https://github.com/Levyaton/WindbotTemplateGenerator
+ 
 ### Server mode
 
 WindBot can run as a "server", provide a http interface to create bot.
@@ -126,6 +155,38 @@ The parameters are same as commandlines, but low cased.
 * If one chain includes two activation that use `AI.SelectCard`, the second one won't select correctly.
 
 ### Changelog
+
+#### v0x134A (2019-05-30)
+
+ - Update YGOPro protrol to 0x134A
+ - New decks: Altergeist, BlueEyesMaxDragon, GrenMajuThunderBoarder, Level8, Orcust, Phantasm, Salamangreat
+ - Use LINQ in codes
+ - Add random bot feature to BotWrapper
+ - Add `ClientCard.Sequence`, `ClientCard.ProcCompleted`, `ClientCard.IsSpecialSummoned`
+ - Add `ClientCard.EquipCards`, `ClientCard.OwnTargets`, handle equip cards
+ - Add `ClientCard.IsCode`, handle card alias
+ - Add `ClientCard.GetLinkedZones`, `ClientCard.HasSetcode`
+ - Add `ClientField.UnderAttack`, `ClientField.GetLinkedZones`, `ClientField.GetFieldSpellCard`
+ - Add `Duel.SummoningCards`, `Duel.LastSummonedCards`
+ - Add `Util.GetTotalAttackingMonsterAttack`, `Util.GetBotAvailZonesFromExtraDeck`
+ - Add `GetMatchingCards`, `GetFirstMatchingCard`, `IsExistingMatchingCard`
+ - Add `ExecutorType.GoToBattlePhase`, `ExecutorType.GoToMainPhase2`, `ExecutorType.GoToEndPhase`
+ - Add `DefaultScapegoat`, `DefaultMaxxC`, `DefaultAshBlossomAndJoyousSpring`, `DefaultGhostOgreAndSnowRabbit`, `DefaultGhostBelleAndHauntedMansion`, `DefaultEffectVeiler`, `DefaultCalledByTheGrave`, `DefaultInfiniteImpermanence`
+ - Rename `AIFunctions` to `AIUtil` (Usage: `AI.Utils.` -> `Util.`)
+ - Rename `AIFunctions.CompareCardAttack` to `CardContainer.CompareCardAttack`
+ - Update `Util.SelectPreferredCards` and `Util.CheckSelectCount` to return the result
+ - Update `ClientField.HasInMonstersZone` to support check face-up card
+ - Update `AI.SelectCard` [\#59](https://github.com/IceYGO/windbot/pull/59)
+ - Handle swap control of cards
+ - Change some `int location` to `CardLocation location`
+ - Update default `OnPreBattleBetween` to recognize more cards
+ - Misc updates to default executors
+ - Misc updates to the AI of some decks
+ - Update the known card enums
+ - Fix `CardSelector.Select`
+ - Fix `OnSelectEffectYn` didn't have `ActivateDescription`
+ - Fix `ClientCard.Attacked`
+ - Fix infinite activation of ZexalWeapons
 
 #### v0x1344 (2018-06-05)
 
@@ -223,3 +284,8 @@ The parameters are same as commandlines, but low cased.
 * Update the known card enums
 
 * More default common cards executor
+
+### Features in this branch
+
+* Added support for Group.SelectUnselect. This is mainly to support KoishiPro or EdoPro.
+

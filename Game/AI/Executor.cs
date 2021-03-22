@@ -14,6 +14,7 @@ namespace WindBot.Game.AI
         public Duel Duel { get; private set; }
         public IList<CardExecutor> Executors { get; private set; }
         public GameAI AI { get; private set; }
+        public AIUtil Util { get; private set; }
 
         protected MainPhase Main { get; private set; }
         protected BattlePhase Battle { get; private set; }
@@ -29,6 +30,7 @@ namespace WindBot.Game.AI
         {
             Duel = duel;
             AI = ai;
+            Util = new AIUtil(duel);
             Executors = new List<CardExecutor>();
 
             Bot = Duel.Fields[0];
@@ -71,13 +73,19 @@ namespace WindBot.Game.AI
 
         public virtual BattlePhaseAction OnSelectAttackTarget(ClientCard attacker, IList<ClientCard> defenders)
         {
-            // Overrided in DefalultExecutor
+            // Overrided in DefaultExecutor
             return null;
         }
 
         public virtual bool OnPreBattleBetween(ClientCard attacker, ClientCard defender)
         {
-            // Overrided in DefalultExecutor
+            // Overrided in DefaultExecutor
+            return true;
+        }
+
+        public virtual bool OnPreActivate(ClientCard card)
+        {
+            // Overrided in DefaultExecutor
             return true;
         }
 
@@ -168,7 +176,7 @@ namespace WindBot.Game.AI
             return -1;
         }
 
-        public virtual int OnSelectPlace(int cardId, int player, int location, int available)
+        public virtual int OnSelectPlace(int cardId, int player, CardLocation location, int available)
         {
             // For overriding
             return 0;
@@ -176,14 +184,35 @@ namespace WindBot.Game.AI
 
         public virtual CardPosition OnSelectPosition(int cardId, IList<CardPosition> positions)
         {
-            // Overrided in DefalultExecutor
+            // Overrided in DefaultExecutor
             return 0;
         }
 
         public virtual bool OnSelectBattleReplay()
         {
-            // Overrided in DefalultExecutor
+            // Overrided in DefaultExecutor
             return false;
+        }
+
+        /// <summary>
+        /// Called when the executor type is SummonOrSet
+        /// </summary>
+        /// <returns>True if select to set the monster.</returns>
+        public virtual bool OnSelectMonsterSummonOrSet(ClientCard card)
+        {
+            // Overrided in DefaultExecutor
+            return false;
+        }
+
+        /// <summary>
+        /// Called when bot is going to annouce a card
+        /// </summary>
+        /// <param name="avail">Available card's ids.</param>
+        /// <returns>Card's id to annouce.</returns>
+        public virtual int OnAnnounceCard(IList<int> avail)
+        {
+            // For overriding
+            return 0;
         }
 
         public void SetMain(MainPhase main)

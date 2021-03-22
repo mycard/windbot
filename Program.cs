@@ -68,6 +68,8 @@ namespace WindBot
             WindBotInfo Info = new WindBotInfo();
             Info.Name = Config.GetString("Name", Info.Name);
             Info.Deck = Config.GetString("Deck", Info.Deck);
+            Info.DeckFile = Config.GetString("DeckFile", Info.DeckFile);
+            Info.DeckCode = Config.GetString("DeckCode", Info.DeckCode);
             Info.Dialog = Config.GetString("Dialog", Info.Dialog);
             Info.Host = Config.GetString("Host", Info.Host);
             Info.Port = Config.GetInt("Port", Info.Port);
@@ -104,6 +106,12 @@ namespace WindBot
                     string port = HttpUtility.ParseQueryString(RawUrl).Get("port");
                     if (port != null)
                         Info.Port = Int32.Parse(port);
+                    string deckfile = HttpUtility.ParseQueryString(RawUrl).Get("deckfile");
+                    if (deckfile != null)
+                        Info.DeckFile = deckfile;
+                    string deckcode = HttpUtility.ParseQueryString(RawUrl).Get("deckcode");
+                    if (deckcode != null)
+                        Info.DeckCode = deckcode;
                     string dialog = HttpUtility.ParseQueryString(RawUrl).Get("dialog");
                     if (dialog != null)
                         Info.Dialog = dialog;
@@ -192,6 +200,23 @@ namespace WindBot
         Logger.WriteErrorLine("Run Error: " + ex);
     }
 #endif
+        }
+
+        public static FileStream ReadFile(string directory, string filename, string extension)
+        {
+            string tryfilename = filename + "." + extension;
+            string fullpath = Path.Combine(directory, tryfilename);
+            if (!File.Exists(fullpath))
+                fullpath = filename;
+            if (!File.Exists(fullpath))
+                fullpath = Path.Combine("../", filename);
+            if (!File.Exists(fullpath))
+                fullpath = Path.Combine("../deck/", filename);
+            if (!File.Exists(fullpath))
+                fullpath = Path.Combine("../", tryfilename);
+            if (!File.Exists(fullpath))
+                fullpath = Path.Combine("../deck/", tryfilename);
+            return new FileStream(fullpath, FileMode.Open, FileAccess.Read);
         }
     }
 }

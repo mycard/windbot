@@ -46,8 +46,8 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.Activate, CardId.SwordsOfRevealingLight, SwordsOfRevealingLight);
             AddExecutor(ExecutorType.Activate, CardId.DoubleSummon, DoubleSummon);
 
-            AddExecutor(ExecutorType.Summon, CardId.AncientGearGolem, DefaultTributeSummon);
-            AddExecutor(ExecutorType.Summon, CardId.Frostosaurus, DefaultTributeSummon);
+            AddExecutor(ExecutorType.Summon, CardId.AncientGearGolem, DefaultMonsterSummon);
+            AddExecutor(ExecutorType.Summon, CardId.Frostosaurus, DefaultMonsterSummon);
             AddExecutor(ExecutorType.SummonOrSet, CardId.AlexandriteDragon);
             AddExecutor(ExecutorType.SummonOrSet, CardId.GeneWarpedWarwolf);
             AddExecutor(ExecutorType.MonsterSet, CardId.GearGolemTheMovingFortress);
@@ -104,7 +104,7 @@ namespace WindBot.Game.AI.Decks
                 if (handCard.IsFacedown())
                     return true;
             }
-            return AI.Utils.IsOneEnemyBetter(true);
+            return Util.IsOneEnemyBetter(true);
         }
     }
 }

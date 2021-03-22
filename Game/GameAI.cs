@@ -10,17 +10,19 @@ namespace WindBot.Game
         public GameClient Game { get; private set; }
         public Duel Duel { get; private set; }
         public Executor Executor { get; set; }
-        public AIFunctions Utils { get; private set; }
 
         private Dialogs _dialogs;
+
+        // record activated count to prevent infinite actions
+        private Dictionary<int, int> _activatedCards;
 
         public GameAI(GameClient game, Duel duel)
         {
             Game = game;
             Duel = duel;
-            Utils = new AIFunctions(duel);
 
             _dialogs = new Dialogs(game);
+            _activatedCards = new Dictionary<int, int>();
         }
 
         /// <summary>
@@ -83,6 +85,7 @@ namespace WindBot.Game
         /// </summary>
         public void OnNewTurn()
         {
+            _activatedCards.Clear();
             Executor.OnNewTurn();
         }
 
@@ -97,6 +100,7 @@ namespace WindBot.Game
             m_materialSelector = null;
             m_option = -1;
             m_yesno = -1;
+            m_announce = 0;
            
             m_place = 0;
             if (Duel.Player == 0 && Duel.Phase == DuelPhase.Draw)
@@ -165,11 +169,11 @@ namespace WindBot.Game
 
             // Sort the attackers and defenders, make monster with higher attack go first.
             List<ClientCard> attackers = new List<ClientCard>(battle.AttackableCards);
-            attackers.Sort(AIFunctions.CompareCardAttack);
+            attackers.Sort(CardContainer.CompareCardAttack);
             attackers.Reverse();
 
             List<ClientCard> defenders = new List<ClientCard>(Duel.Fields[1].GetMonsters());
-            defenders.Sort(AIFunctions.CompareDefensePower);
+            defenders.Sort(CardContainer.CompareDefensePower);
             defenders.Reverse();
 
             // Let executor decide which card should attack first.
@@ -191,12 +195,8 @@ namespace WindBot.Game
             if (defenders.Count == 0)
             {
                 // Attack with the monster with the lowest attack first
-                for (int i = attackers.Count - 1; i >= 0; --i)
-                {
-                    ClientCard attacker = attackers[i];
-                    if (attacker.Attack > 0)
-                        return Attack(attacker, null);
-                }
+                ClientCard attacker = attackers[attackers.Count - 1];
+                return Attack(attacker, null);
             }
             else
             {
@@ -227,18 +227,12 @@ namespace WindBot.Game
         /// <returns>A new list containing the selected cards.</returns>
         public IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, int hint, bool cancelable)
         {
-            const int HINTMSG_FMATERIAL = 511;
-            const int HINTMSG_SMATERIAL = 512;
-            const int HINTMSG_XMATERIAL = 513;
-            const int HINTMSG_LMATERIAL = 533;
-            const int HINTMSG_SPSUMMON = 509;
-
             // Check for the executor.
             IList<ClientCard> result = Executor.OnSelectCard(cards, min, max, hint, cancelable);
             if (result != null)
                 return result;
 
-            if (hint == HINTMSG_SPSUMMON && min == 1 && max > min) // pendulum summon
+            if (hint == HintMsg.SpSummon && min == 1 && max > min) // pendulum summon
             {
                 result = Executor.OnSelectPendulumSummon(cards, max);
                 if (result != null)
@@ -246,7 +240,7 @@ namespace WindBot.Game
             }
 
             CardSelector selector = null;
-            if (hint == HINTMSG_FMATERIAL || hint == HINTMSG_SMATERIAL || hint == HINTMSG_XMATERIAL || hint == HINTMSG_LMATERIAL)
+            if (hint == HintMsg.FusionMaterial || hint == HintMsg.SynchroMaterial || hint == HintMsg.XyzMaterial || hint == HintMsg.LinkMaterial)
             {
                 if (m_materialSelector != null)
                 {
@@ -255,13 +249,13 @@ namespace WindBot.Game
                 }
                 else
                 {
-                    if (hint == HINTMSG_FMATERIAL)
+                    if (hint == HintMsg.FusionMaterial)
                         result = Executor.OnSelectFusionMaterial(cards, min, max);
-                    if (hint == HINTMSG_SMATERIAL)
+                    if (hint == HintMsg.SynchroMaterial)
                         result = Executor.OnSelectSynchroMaterial(cards, 0, min, max);
-                    if (hint == HINTMSG_XMATERIAL)
+                    if (hint == HintMsg.XyzMaterial)
                         result = Executor.OnSelectXyzMaterial(cards, min, max);
-                    if (hint == HINTMSG_LMATERIAL)
+                    if (hint == HintMsg.LinkMaterial)
                         result = Executor.OnSelectLinkMaterial(cards, min, max);
 
                     if (result != null)
@@ -373,7 +367,7 @@ namespace WindBot.Game
         {
             foreach (CardExecutor exec in Executor.Executors)
             {
-                if (ShouldExecute(exec, card, ExecutorType.Activate))
+                if (ShouldExecute(exec, card, ExecutorType.Activate, desc))
                     return true;
             }
             return false;
@@ -440,8 +434,7 @@ namespace WindBot.Game
                     }
                     if (ShouldExecute(exec, card, ExecutorType.SummonOrSet))
                     {
-                        if (Utils.IsAllEnemyBetter(true) && Utils.IsAllEnemyBetterThanValue(card.Attack + 300, false) &&
-                            main.MonsterSetableCards.Contains(card))
+                        if (main.MonsterSetableCards.Contains(card) && Executor.OnSelectMonsterSummonOrSet(card))
                         {
                             _dialogs.SendSetMonster();
                             return new MainPhaseAction(MainPhaseAction.MainAction.SetMonster, card.ActionIndex);
@@ -449,7 +442,7 @@ namespace WindBot.Game
                         _dialogs.SendSummon(card.Name);
                         return new MainPhaseAction(MainPhaseAction.MainAction.Summon, card.ActionIndex);
                     }
-                }                
+                }
                 foreach (ClientCard card in main.SpellSetableCards)
                 {
                     if (ShouldExecute(exec, card, ExecutorType.SpellSet))
@@ -481,7 +474,7 @@ namespace WindBot.Game
             return 0; // Always select the first option.
         }
 
-        public int OnSelectPlace(int cardId, int player, int location, int available)
+        public int OnSelectPlace(int cardId, int player, CardLocation location, int available)
         {
             int selector_selected = m_place;
             m_place = 0;
@@ -530,16 +523,13 @@ namespace WindBot.Game
         /// <returns></returns>
         public IList<ClientCard> OnSelectSum(IList<ClientCard> cards, int sum, int min, int max, int hint, bool mode)
         {
-            const int HINTMSG_RELEASE = 500;
-            const int HINTMSG_SMATERIAL = 512;
-
             IList<ClientCard> selected = Executor.OnSelectSum(cards, sum, min, max, hint, mode);
             if (selected != null)
             {
                 return selected;
             }
 
-            if (hint == HINTMSG_RELEASE || hint == HINTMSG_SMATERIAL)
+            if (hint == HintMsg.Release || hint == HintMsg.SynchroMaterial)
             {
                 if (m_materialSelector != null)
                 {
@@ -549,10 +539,10 @@ namespace WindBot.Game
                 {
                     switch (hint)
                     {
-                        case HINTMSG_SMATERIAL:
+                        case HintMsg.SynchroMaterial:
                             selected = Executor.OnSelectSynchroMaterial(cards, sum, min, max);
                             break;
-                        case HINTMSG_RELEASE:
+                        case HintMsg.Release:
                             selected = Executor.OnSelectRitualTribute(cards, sum, min, max);
                             break;
                     }
@@ -702,7 +692,7 @@ namespace WindBot.Game
             // Always choose the minimum and lowest atk.
             List<ClientCard> sorted = new List<ClientCard>();
             sorted.AddRange(cards);
-            sorted.Sort(AIFunctions.CompareCardAttack);
+            sorted.Sort(CardContainer.CompareCardAttack);
 
             IList<ClientCard> selected = new List<ClientCard>();
 
@@ -736,12 +726,18 @@ namespace WindBot.Game
         /// <summary>
         /// Called when the AI has to declare a card.
         /// </summary>
+        /// <param name="avail">Available card's ids.</param>
         /// <returns>Id of the selected card.</returns>
-        public int OnAnnounceCard()
+        public int OnAnnounceCard(IList<int> avail)
         {
-            if (m_announce == 0)
-                return 89631139; // Blue-eyes white dragon
-            return m_announce;
+            int selected = Executor.OnAnnounceCard(avail);
+            if (avail.Contains(selected))
+                return selected;
+            if (avail.Contains(m_announce))
+                return m_announce;
+            else if (m_announce > 0)
+                Logger.WriteErrorLine("Pre-announced card cant be used: " + m_announce);
+            return avail[0];
         }
 
         // _ Others functions _
@@ -946,6 +942,11 @@ namespace WindBot.Game
             m_materialSelector = null;
         }
 
+        public bool HaveSelectedCards()
+        {
+            return m_selector.Count > 0 || m_materialSelector != null;
+        }
+
         public CardSelector GetSelectedCards()
         {
             CardSelector selected = null;
@@ -1097,11 +1098,30 @@ namespace WindBot.Game
 
         private bool ShouldExecute(CardExecutor exec, ClientCard card, ExecutorType type, int desc = -1)
         {
+            if (card.Id != 0 && type == ExecutorType.Activate)
+            {
+                if (_activatedCards.ContainsKey(card.Id) && _activatedCards[card.Id] >= 9)
+                    return false;
+                if (!Executor.OnPreActivate(card))
+                    return false;
+            }
             Executor.SetCard(type, card, desc);
-            return card != null &&
-                   exec.Type == type &&
-                   (exec.CardId == -1 || exec.CardId == card.Id) &&
-                   (exec.Func == null || exec.Func());
+            bool result = card != null && exec.Type == type &&
+                (exec.CardId == -1 || exec.CardId == card.Id) &&
+                (exec.Func == null || exec.Func());
+            if (card.Id != 0 && type == ExecutorType.Activate && result)
+            {
+                int count = card.IsDisabled() ? 3 : 1;
+                if (!_activatedCards.ContainsKey(card.Id))
+                {
+                    _activatedCards.Add(card.Id, count);
+                }
+                else
+                {
+                    _activatedCards[card.Id] += count;
+                }
+            }
+            return result;
         }
     }
 }

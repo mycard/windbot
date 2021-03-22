@@ -6,11 +6,12 @@ using WindBot.Game.AI;
 
 namespace WindBot.Game.AI.Decks
 {
-    [Deck("GrenMajuThunderBoarder", "AI_GrenMajuThunderBoarder", "Normal")]
+    [Deck("GrenMajuThunderBoarder", "AI_GrenMajuThunderBoarder")]
     public class GrenMajuThunderBoarderExecutor : DefaultExecutor
     {
         public class CardId
         {
+            public const int MetalSnake = 71197066;
             public const int InspectBoarder = 15397015;
             public const int ThunderKingRaiOh = 71564252;
             public const int AshBlossomAndJoyousSpring =14558127;
@@ -32,6 +33,7 @@ namespace WindBot.Game.AI.Decks
             public const int HeavyStormDuster = 23924608;
             public const int DrowningMirrorForce = 47475363;
             public const int MacroCosmos = 30241314;
+            public const int Crackdown = 36975314;
             public const int AntiSpellFragrance = 58921041;
             public const int ImperialOrder = 61740673;
             public const int PhatomKnightsSword = 61936647;
@@ -89,9 +91,13 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.Activate, CardId.PotOfDesires, PotOfDesireseff);
             AddExecutor(ExecutorType.Activate, CardId.CardOfDemise, CardOfDemiseeff);
             //sp
+            AddExecutor(ExecutorType.Activate, CardId.Linkuriboh, Linkuriboheff);
+            AddExecutor(ExecutorType.SpSummon, CardId.Linkuriboh, Linkuribohsp);
+            AddExecutor(ExecutorType.SpSummon, CardId.KnightmareCerberus,Knightmaresp);
+            AddExecutor(ExecutorType.SpSummon, CardId.KnightmarePhoenix, Knightmaresp);
             AddExecutor(ExecutorType.SpSummon, CardId.MissusRadiant, MissusRadiantsp);
             AddExecutor(ExecutorType.Activate, CardId.MissusRadiant, MissusRadianteff);
-            AddExecutor(ExecutorType.Activate, CardId.Linkuriboh, Linkuriboheff);
+            
             AddExecutor(ExecutorType.SpSummon, CardId.Linkuriboh, Linkuribohsp);
             AddExecutor(ExecutorType.SpSummon, CardId.LinkSpider);
             AddExecutor(ExecutorType.SpSummon, CardId.BorreloadDragon, BorreloadDragonsp);
@@ -104,7 +110,11 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.Summon, CardId.ThunderKingRaiOh, ThunderKingRaiOhsummon);
             AddExecutor(ExecutorType.SpSummon, CardId.BorreloadDragon, BorreloadDragonspsecond);
             AddExecutor(ExecutorType.SpSummon, CardId.EaterOfMillions, EaterOfMillionssp);
-            //spell          
+
+            AddExecutor(ExecutorType.Activate, CardId.MetalSnake, MetalSnakesp);
+            AddExecutor(ExecutorType.Activate, CardId.MetalSnake, MetalSnakeeff);
+            //spell
+            AddExecutor(ExecutorType.Activate, CardId.Crackdown, Crackdowneff);
             AddExecutor(ExecutorType.Activate, CardId.MoonMirrorShield, MoonMirrorShieldeff);
             AddExecutor(ExecutorType.Activate, CardId.Scapegoat, DefaultScapegoat);
             AddExecutor(ExecutorType.Activate, CardId.PhatomKnightsSword, PhatomKnightsSwordeff);
@@ -183,14 +193,14 @@ namespace WindBot.Game.AI.Decks
                     targets.Add(check);
                 
             }
-            if (AI.Utils.GetPZone(1, 0) != null && AI.Utils.GetPZone(1, 0).Type == 16777218)
+            if (Util.GetPZone(1, 0) != null && Util.GetPZone(1, 0).Type == 16777218)
             {
-                targets.Add(AI.Utils.GetPZone(1, 0));
+                targets.Add(Util.GetPZone(1, 0));
                 
             }
-            if (AI.Utils.GetPZone(1, 1) != null && AI.Utils.GetPZone(1, 1).Type == 16777218)
+            if (Util.GetPZone(1, 1) != null && Util.GetPZone(1, 1).Type == 16777218)
             {
-                targets.Add(AI.Utils.GetPZone(1, 1));               
+                targets.Add(Util.GetPZone(1, 1));               
             }
             foreach (ClientCard check in Enemy.GetSpells())
             {
@@ -208,9 +218,9 @@ namespace WindBot.Game.AI.Decks
                 if (check.Type == 16777218)
                     count++;
             }
-            if(AI.Utils.GetLastChainCard()!=null && 
-                (AI.Utils.GetLastChainCard().HasType(CardType.Continuous)||
-                AI.Utils.GetLastChainCard().HasType(CardType.Field) || count==2) &&
+            if(Util.GetLastChainCard()!=null && 
+                (Util.GetLastChainCard().HasType(CardType.Continuous)||
+                Util.GetLastChainCard().HasType(CardType.Field) || count==2) &&
                 Duel.LastChainPlayer==1)               
                 {
                 AI.SelectCard(targets);
@@ -220,6 +230,9 @@ namespace WindBot.Game.AI.Decks
         }
         private bool UnendingNightmareeff()
         {
+            if (Card.IsDisabled()){
+                return false;
+            }
             ClientCard card = null;
             foreach(ClientCard check in Enemy.GetSpells())
             {
@@ -235,9 +248,9 @@ namespace WindBot.Game.AI.Decks
             }
             if(count==2)
             {
-                if (AI.Utils.GetPZone(1, 1) != null && AI.Utils.GetPZone(1, 1).Type == 16777218)
+                if (Util.GetPZone(1, 1) != null && Util.GetPZone(1, 1).Type == 16777218)
                 {
-                    card=AI.Utils.GetPZone(1, 1);
+                    card=Util.GetPZone(1, 1);
                 }
             }
                 
@@ -251,27 +264,27 @@ namespace WindBot.Game.AI.Decks
 
         private bool DarkBribeeff()
         {
-            if (AI.Utils.GetLastChainCard()!=null && AI.Utils.GetLastChainCard().IsCode(CardId.UpstartGoblin))
+            if (Util.GetLastChainCard()!=null && Util.GetLastChainCard().IsCode(CardId.UpstartGoblin))
                 return false;
             return true;
 
         }
         private bool ImperialOrderfirst()
         {
-            if (AI.Utils.GetLastChainCard() != null && AI.Utils.GetLastChainCard().IsCode(CardId.UpstartGoblin))
+            if (Util.GetLastChainCard() != null && Util.GetLastChainCard().IsCode(CardId.UpstartGoblin))
                 return false;
-            return DefaultOnBecomeTarget() && AI.Utils.GetLastChainCard().HasType(CardType.Spell);
+            return DefaultOnBecomeTarget() && Util.GetLastChainCard().HasType(CardType.Spell);
         }
 
         private bool ImperialOrdereff()
         {
-            if (AI.Utils.GetLastChainCard() != null && AI.Utils.GetLastChainCard().IsCode(CardId.UpstartGoblin))
+            if (Util.GetLastChainCard() != null && Util.GetLastChainCard().IsCode(CardId.UpstartGoblin))
                 return false;
             if (Duel.LastChainPlayer == 1)
             {
                 foreach(ClientCard check in Enemy.GetSpells())
                 {
-                    if (AI.Utils.GetLastChainCard() == check)
+                    if (Util.GetLastChainCard() == check)
                         return true;
                 }
             }
@@ -284,7 +297,7 @@ namespace WindBot.Game.AI.Decks
                 if(Enemy.BattlingMonster.Attack-Bot.LifePoints>=1000)
                     return DefaultUniqueTrap();
             }
-            if (AI.Utils.GetTotalAttackingMonsterAttack(1) >= Bot.LifePoints)
+            if (Util.GetTotalAttackingMonsterAttack(1) >= Bot.LifePoints)
                 return DefaultUniqueTrap();
             if (Enemy.GetMonsterCount() >= 2)
                 return DefaultUniqueTrap();
@@ -307,7 +320,7 @@ namespace WindBot.Game.AI.Decks
                 if (card.HasType(CardType.Monster))
                     count++;
             }
-            if(AI.Utils.GetBestEnemyMonster()!=null && AI.Utils.GetBestEnemyMonster().Attack>=1900)
+            if(Util.GetBestEnemyMonster()!=null && Util.GetBestEnemyMonster().Attack>=1900)
                 AI.SelectCard(
                     CardId.EaterOfMillions,
                     CardId.PotOfDesires,
@@ -358,6 +371,13 @@ namespace WindBot.Game.AI.Decks
                 return true;
             }
             return false;
+        }
+
+        private bool Crackdowneff()
+        {
+            if (Util.GetOneEnemyBetterThanMyBest(true, true) != null && Bot.UnderAttack)
+                AI.SelectCard(Util.GetOneEnemyBetterThanMyBest(true, true));
+            return Util.GetOneEnemyBetterThanMyBest(true, true) != null && Bot.UnderAttack;
         }
 
         private bool MoonMirrorShieldeff()
@@ -430,15 +450,15 @@ namespace WindBot.Game.AI.Decks
 
         private bool BorreloadDragonsp()
         {
-            if (!Bot.HasInMonstersZone(CardId.MissusRadiant)) return false;
+            if (!(Bot.HasInMonstersZone(CardId.MissusRadiant) || Bot.HasInMonstersZone(new[] { CardId.KnightmareCerberus, CardId.KnightmarePhoenix }))) return false;
             IList<ClientCard> material_list = new List<ClientCard>();
             foreach (ClientCard monster in Bot.GetMonsters())
             {
-                if (monster.IsCode(CardId.MissusRadiant, CardId.LinkSpider, CardId.Linkuriboh))
+                if (monster.IsCode(CardId.MissusRadiant, CardId.KnightmareCerberus, CardId.KnightmarePhoenix, CardId.LinkSpider, CardId.Linkuriboh))
                     material_list.Add(monster);
                 if (material_list.Count == 3) break;
             }
-            if(material_list.Count>=3)
+            if (material_list.Count >= 3)
             {
                 AI.SelectMaterials(material_list);
                 return true;
@@ -447,11 +467,11 @@ namespace WindBot.Game.AI.Decks
         }
         private bool BorreloadDragonspsecond()
         {
-            if (!Bot.HasInMonstersZone(CardId.MissusRadiant)) return false;
+            if (!(Bot.HasInMonstersZone(CardId.MissusRadiant) || Bot.HasInMonstersZone(new[] { CardId.KnightmareCerberus,CardId.KnightmarePhoenix }))) return false;
             IList<ClientCard> material_list = new List<ClientCard>();
             foreach (ClientCard monster in Bot.GetMonsters())
             {
-                if (monster.IsCode(CardId.MissusRadiant, CardId.LinkSpider, CardId.Linkuriboh))
+                if (monster.IsCode(CardId.MissusRadiant, CardId.KnightmareCerberus, CardId.KnightmarePhoenix, CardId.LinkSpider, CardId.Linkuriboh))
                     material_list.Add(monster);
                 if (material_list.Count == 3) break;
             }
@@ -473,7 +493,7 @@ namespace WindBot.Game.AI.Decks
                 }
                 return true;
             };
-            ClientCard BestEnemy = AI.Utils.GetBestEnemyMonster(true);
+            ClientCard BestEnemy = Util.GetBestEnemyMonster(true);
             ClientCard WorstBot = Bot.GetMonsters().GetLowestAttackMonster();
             if (BestEnemy == null || BestEnemy.HasPosition(CardPosition.FaceDown)) return false;
             if (WorstBot == null || WorstBot.HasPosition(CardPosition.FaceDown)) return false;
@@ -493,9 +513,9 @@ namespace WindBot.Game.AI.Decks
                 AI.SelectPlace(Zones.z4);
             if (Enemy.HasInMonstersZone(CardId.KnightmareGryphon, true)) return false;
             if (Bot.HasInMonstersZone(CardId.InspectBoarder) && !eater_eff) return false;           
-            if (AI.Utils.GetProblematicEnemyMonster() == null && Bot.ExtraDeck.Count < 5) return false;
+            if (Util.GetProblematicEnemyMonster() == null && Bot.ExtraDeck.Count < 5) return false;
             if (Bot.GetMonstersInMainZone().Count >= 5) return false;
-            if (AI.Utils.IsTurn1OrMain2()) return false;
+            if (Util.IsTurn1OrMain2()) return false;
             AI.SelectPosition(CardPosition.FaceUpAttack);
             IList<ClientCard> targets = new List<ClientCard>();            
             foreach (ClientCard e_c in Bot.ExtraDeck)
@@ -548,6 +568,37 @@ namespace WindBot.Game.AI.Decks
             return true;
         }
 
+        private bool MetalSnakesp()
+        {
+            if (ActivateDescription == Util.GetStringId(CardId.MetalSnake, 0) && !Bot.HasInMonstersZone(CardId.MetalSnake))
+            {
+                if(Duel.Player == 1 && Duel.Phase >= DuelPhase.BattleStart )
+                    return Bot.Deck.Count >= 12;
+                if(Duel.Player == 0 && Duel.Phase >= DuelPhase.Main1)
+                    return Bot.Deck.Count >= 12;
+            }              
+            return false;
+        }
+
+        private bool MetalSnakeeff()
+        {
+            ClientCard target = Util.GetOneEnemyBetterThanMyBest(true, true);
+            if (ActivateDescription == Util.GetStringId(CardId.MetalSnake, 1) && target != null)
+            {
+                AI.SelectCard(new[]
+                {                    
+                    CardId.HeavymetalfoesElectrumite,
+                    CardId.BrandishMaidenKagari,
+                    CardId.CrystronNeedlefiber,
+                    CardId.RaidraptorUltimateFalcon,
+                    CardId.NingirsuTheWorldChaliceWarrior
+                });    
+                AI.SelectNextCard(target);
+                return true;
+            }
+            return false;    
+            
+        }
         private bool MissusRadiantsp()
         {                       
             IList<ClientCard> material_list = new List<ClientCard>();
@@ -574,9 +625,10 @@ namespace WindBot.Game.AI.Decks
         }
 
         private bool Linkuribohsp()
-        {            
+        {
+            
             foreach (ClientCard c in Bot.GetMonsters())
-            {
+            {               
                 if (!c.IsCode(CardId.EaterOfMillions, CardId.Linkuriboh) && c.Level==1)
                 {
                     AI.SelectMaterials(c);
@@ -586,9 +638,26 @@ namespace WindBot.Game.AI.Decks
             return false;
         }
 
+        private bool Knightmaresp()
+        {
+            int[] firstMats = new[] {
+              CardId.KnightmareCerberus,
+              CardId.KnightmarePhoenix
+            };
+            if (Bot.MonsterZone.GetMatchingCardsCount(card => card.IsCode(firstMats)) >= 1)return false;
+            foreach (ClientCard c in Bot.GetMonsters())
+            {
+                if (!c.IsCode(CardId.EaterOfMillions) && c.Level == 1)
+                {
+                    AI.SelectMaterials(c);
+                    return true;
+                }
+            }
+            return false;
+        }
         private bool Linkuriboheff()
         {
-            if (Duel.LastChainPlayer == 0 && AI.Utils.GetLastChainCard().IsCode(CardId.Linkuriboh)) return false;           
+            if (Duel.LastChainPlayer == 0 && Util.GetLastChainCard().IsCode(CardId.Linkuriboh)) return false;           
             return true;
         }
         private bool MonsterRepos()

@@ -6,7 +6,7 @@ using WindBot.Game.AI;
 
 namespace WindBot.Game.AI.Decks
 {
-    [Deck("Zoodiac", "AI_Zoodiac", "OutDated")]
+    [Deck("Zoodiac", "AI_Zoodiac")]
     class ZoodiacExecutor : DefaultExecutor
     {
         public class CardId
@@ -47,7 +47,6 @@ namespace WindBot.Game.AI.Decks
         bool TigermortarSpsummoned = false;
         bool ChakanineSpsummoned = false;
         bool BroadbullSpsummoned = false;
-        int WhiptailEffectCount = 0;
 
         public ZoodiacExecutor(GameAI ai, Duel duel)
             : base(ai, duel)
@@ -128,7 +127,6 @@ namespace WindBot.Game.AI.Decks
             TigermortarSpsummoned = false;
             ChakanineSpsummoned = false;
             BroadbullSpsummoned = false;
-            WhiptailEffectCount = 0;
         }
 
         public override bool OnPreBattleBetween(ClientCard attacker, ClientCard defender)
@@ -157,7 +155,7 @@ namespace WindBot.Game.AI.Decks
                     || Duel.Phase == DuelPhase.Damage))
                     return false;
                 return Duel.Player==0
-                    || AI.Utils.IsOneEnemyBetter();
+                    || Util.IsOneEnemyBetter();
             }
             return true;
         }
@@ -419,7 +417,7 @@ namespace WindBot.Game.AI.Decks
 
         private bool RatpierMaterialEffect()
         {
-            if (ActivateDescription == AI.Utils.GetStringId(CardId.Ratpier, 1))
+            if (ActivateDescription == Util.GetStringId(CardId.Ratpier, 1))
             {
                 AI.SelectPosition(CardPosition.FaceUpDefence);
                 return true;
@@ -431,7 +429,7 @@ namespace WindBot.Game.AI.Decks
         {
             if (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2)
                 return false;
-            if (Card.IsDisabled() || WhiptailEffectCount >= 3)
+            if (Card.IsDisabled())
                 return false;
             ClientCard target = null;
             List<ClientCard> monsters = Bot.GetMonsters();
@@ -461,7 +459,6 @@ namespace WindBot.Game.AI.Decks
                         CardId.Drident
                     });
             }
-            WhiptailEffectCount++;
             return true;
         }
 
@@ -479,7 +476,7 @@ namespace WindBot.Game.AI.Decks
         {
             if (Duel.LastChainPlayer == 0)
                 return false;
-            ClientCard target = AI.Utils.GetBestEnemyCard(true);
+            ClientCard target = Util.GetBestEnemyCard(true);
             if (target == null)
                 return false;
             AI.SelectCard(

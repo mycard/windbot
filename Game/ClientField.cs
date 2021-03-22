@@ -150,12 +150,17 @@ namespace WindBot.Game
 
         public List<ClientCard> GetMonstersInExtraZone()
         {
-            return GetMonsters().Where((card, i) => i >= 5).ToList();
+            return GetMonsters().Where(card => card.Sequence >= 5).ToList();
         }
 
         public List<ClientCard> GetMonstersInMainZone()
         {
-            return GetMonsters().Where((card, i) => i < 5).ToList();
+            return GetMonsters().Where(card => card.Sequence < 5).ToList();
+        }
+
+        public ClientCard GetFieldSpellCard()
+        {
+            return SpellZone[5];
         }
 
         public bool HasInHand(int cardId)
@@ -301,10 +306,11 @@ namespace WindBot.Game
         public int GetRemainingCount(int cardId, int initialCount)
         {
             int remaining = initialCount;
-            remaining = remaining - Hand.Count(card => card != null && card.IsCode(cardId));
-            remaining = remaining - SpellZone.Count(card => card != null && card.IsCode(cardId));
-            remaining = remaining - Graveyard.Count(card => card != null && card.IsCode(cardId));
-            remaining = remaining - Banished.Count(card => card != null && card.IsCode(cardId));
+            remaining = remaining - Hand.Count(card => card != null && card.IsOriginalCode(cardId));
+            remaining = remaining - SpellZone.Count(card => card != null && card.IsOriginalCode(cardId));
+            remaining = remaining - MonsterZone.Count(card => card != null && card.IsOriginalCode(cardId));
+            remaining = remaining - Graveyard.Count(card => card != null && card.IsOriginalCode(cardId));
+            remaining = remaining - Banished.Count(card => card != null && card.IsOriginalCode(cardId));
             return (remaining < 0) ? 0 : remaining;
         }
 

@@ -1,0 +1,40 @@
+{
+  "welcome": [
+    "……",
+    "诶？！"
+  ],
+  "deckerror": [
+    "……{0}……忘带了……"
+  ],
+  "duelstart": [
+    "……"
+  ],
+  "newturn": [
+    "……"
+  ],
+  "endturn": [
+    "……"
+  ],
+  "directattack": [
+    "{0}……"
+  ],
+  "attack": [
+    "{0}……{1}……"
+  ],
+  "ondirectattack": [
+    "……"
+  ],
+  "facedownmonstername": "怪兽",
+  "activate": [
+    "……{0}……"
+  ],
+  "summon": [
+    "……{0}。"
+  ],
+  "setmonster": [
+    "……"
+  ],
+  "chaining": [
+    "……{0}！"
+  ]
+}
