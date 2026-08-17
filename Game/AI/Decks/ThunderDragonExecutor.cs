@@ -492,7 +492,9 @@ namespace WindBot.Game.AI.Decks
                          || (copy_cards[i].Id == CardId.ThunderDragonmatrix && HasInZoneNoActivate(CardId.ThunderDragonmatrix, CardLocation.MonsterZone)))
                     {
                         if (i <= 0) continue;
-                        (copy_cards[i], copy_cards[0]) = (copy_cards[0], copy_cards[i]);
+                        ClientCard tmp = copy_cards[i];
+                        copy_cards[i] = copy_cards[0];
+                        copy_cards[0] = tmp;
                     }
                 }
                 return Util.CheckSelectCount(copy_cards, cards, min, max);
@@ -1318,7 +1320,9 @@ namespace WindBot.Game.AI.Decks
                     {
                         if (i > 0)
                         {
-                            (link_materials[i], link_materials[0]) = (link_materials[0], link_materials[i]);
+                            ClientCard tmp = link_materials[i];
+                            link_materials[i] = link_materials[0];
+                            link_materials[0] = tmp;
                         }
                         index = i;
                         break;

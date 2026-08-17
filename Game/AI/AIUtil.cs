@@ -593,7 +593,9 @@ namespace WindBot.Game.AI
             while (n-- > 1)
             {
                 int index = Program.Rand.Next(n + 1);
-                (list[n], list[index]) = (list[index], list[n]);
+                T tmp = list[n];
+                list[n] = list[index];
+                list[index] = tmp;
             }
         }
     }
