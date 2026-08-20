@@ -39,6 +39,7 @@ namespace WindBot.Game.AI.Decks
             public const int BrainControl = 87910978; // 洗脑
             public const int MysticalSpaceTyphoon = 5318639; // 旋风
             public const int BookOfMoon = 14087893; // 月之书
+            public const int SnatchSteal = 45986603; // 强夺
             public const int PrematureBurial = 70828912; // 过早的埋葬
             public const int MirrorForce = 44095762; // 神圣防护罩 -反射镜力-
             public const int TorrentialTribute = 53582587; // 激流葬
@@ -53,7 +54,13 @@ namespace WindBot.Game.AI.Decks
         private int _diskCommanderSentToGraveTurn = -1;
         private int _soulExchangeTurn = -1;
 
-        protected bool UseNerfedCardEffects { get; set; }
+        /*
+        命运英雄 圆盘人：原版可当回合复活、可重复触发且属于必发效果；削弱版限制当回合复活并记录一决斗一次。
+        三眼怪：削弱模式避免优先检索需要当回合发动效果的卡。
+        死之卡组破坏病毒：原版不受伤害归零副作用影响，并考虑三回合持续收益；削弱版保留更谨慎的发动条件。
+        洗脑：原版允许选择任意合法表侧怪兽；削弱版只考虑可通常召唤/盖放的怪兽。
+        */
+        private bool UseNerfedCardEffects { get; set; }
 
         private bool DiskCommanderEffectAvailable
         {
@@ -63,6 +70,8 @@ namespace WindBot.Game.AI.Decks
         public Monarch506Executor(GameAI ai, Duel duel)
             : base(ai, duel)
         {
+            UseNerfedCardEffects = !Config.GetBool("UsePreErrataEffects", false);
+
             // 光暗龙的无效效果是强制效果，必须先于所有可选响应处理。
             AddExecutor(ExecutorType.Activate, CardId.LightAndDarknessDragon);
             AddExecutor(ExecutorType.Activate, CardId.GorzTheEmissaryOfDarkness);
@@ -781,7 +790,71 @@ namespace WindBot.Game.AI.Decks
             if (equipTargetsSpiritReaper)
                 return false;
 
-            return DefaultMysticalSpaceTyphoon();
+            ClientCard equipTarget = GetHighPriorityEnemyEquipSpellTarget(false);
+            if (equipTarget != null)
+            {
+                AI.SelectCard(equipTarget);
+                return true;
+            }
+
+            ClientCard attacker = Duel.Phase == DuelPhase.BattleStep &&
+                Bot.UnderAttack
+                ? Enemy.BattlingMonster
+                : null;
+            equipTarget = attacker == null
+                ? null
+                : attacker.EquipCards.FirstOrDefault(card =>
+                    card.Controller == 1 &&
+                    !card.IsShouldNotBeTarget() &&
+                    !card.IsShouldNotBeSpellTrapTarget());
+            if (equipTarget != null)
+            {
+                AI.SelectCard(equipTarget);
+                return true;
+            }
+
+            List<ClientCard> spells = Enemy.GetSpells();
+            ClientCard target = Enemy.SpellZone.GetFloodgate();
+            if (target == null && Duel.Player == 0)
+                target = spells.FirstOrDefault(card => card.IsFacedown());
+            if (target == null && Duel.Player == 1)
+                target = spells.FirstOrDefault(card =>
+                    card.HasType(CardType.Continuous) ||
+                    card.HasType(CardType.Field));
+            if (target == null)
+                return false;
+
+            AI.SelectCard(target);
+            return true;
+        }
+
+        private ClientCard GetHighPriorityEnemyEquipSpellTarget(bool monsterEffect)
+        {
+            var highPriorityIds = new[]
+            {
+                CardId.SnatchSteal,
+                CardId.PrematureBurial
+            };
+            ClientCard lastChainCard = Util.GetLastChainCard();
+            if (lastChainCard != null &&
+                lastChainCard.Controller == 1 &&
+                lastChainCard.Location == CardLocation.SpellZone &&
+                lastChainCard.IsCode(highPriorityIds) &&
+                !lastChainCard.IsShouldNotBeTarget() &&
+                (monsterEffect
+                    ? !lastChainCard.IsShouldNotBeMonsterTarget()
+                    : !lastChainCard.IsShouldNotBeSpellTrapTarget()))
+            {
+                return lastChainCard;
+            }
+
+            return Enemy.GetSpells().FirstOrDefault(card =>
+                card.IsFaceup() &&
+                card.IsCode(highPriorityIds) &&
+                !card.IsShouldNotBeTarget() &&
+                (monsterEffect
+                    ? !card.IsShouldNotBeMonsterTarget()
+                    : !card.IsShouldNotBeSpellTrapTarget()));
         }
 
         private bool BookOfMoonActivate()
@@ -1246,13 +1319,30 @@ namespace WindBot.Game.AI.Decks
             List<int> searchPriority = new List<int>();
             bool maliciousInGrave =
                 Bot.HasInGraveyard(CardId.DestinyHEROMalicious);
+            int maliciousInDeck =
+                Bot.GetCardCountInDeck(CardId.DestinyHEROMalicious);
+            bool preserveLastMalicious =
+                maliciousInDeck == 1 &&
+                !Bot.HasInBanished(CardId.DestinyHEROMalicious);
             bool hasDestinyDraw =
                 Bot.HasInHandOrInSpellZone(CardId.DestinyDraw);
             bool hasPhoenixWingWindBlast =
                 Bot.HasInHandOrInSpellZone(CardId.PhoenixWingWindBlast);
+
+            if (preserveLastMalicious)
+            {
+                if (Bot.HasInDeck(CardId.DestinyHERODiskCommander))
+                    searchPriority.Add(CardId.DestinyHERODiskCommander);
+                if (Bot.HasInDeck(CardId.DestinyHEROFearMonger))
+                    searchPriority.Add(CardId.DestinyHEROFearMonger);
+                if (searchPriority.Count == 0 && !hasDestinyDraw)
+                    return false;
+            }
+
             if (hasDestinyDraw &&
                 !maliciousInGrave &&
-                Bot.HasInDeck(CardId.DestinyHEROMalicious))
+                maliciousInDeck > 0 &&
+                (!preserveLastMalicious || searchPriority.Count == 0))
                 searchPriority.Add(CardId.DestinyHEROMalicious);
             if (DiskCommanderEffectAvailable &&
                 Bot.HasInGraveyard(CardId.DestinyHERODiskCommander) &&
@@ -1269,7 +1359,8 @@ namespace WindBot.Game.AI.Decks
                 searchPriority.Add(CardId.DestinyHERODiskCommander);
             }
             if (!maliciousInGrave &&
-                Bot.HasInDeck(CardId.DestinyHEROMalicious))
+                maliciousInDeck > 0 &&
+                !preserveLastMalicious)
                 searchPriority.Add(CardId.DestinyHEROMalicious);
             if (Bot.HasInDeck(CardId.DestinyHEROFearMonger))
                 searchPriority.Add(CardId.DestinyHEROFearMonger);
@@ -1327,7 +1418,8 @@ namespace WindBot.Game.AI.Decks
             if (OwnLightAndDarknessDragonCanNegate())
                 return false;
 
-            ClientCard target = Util.GetBestEnemySpell(true);
+            ClientCard target = GetHighPriorityEnemyEquipSpellTarget(true) ??
+                Util.GetBestEnemySpell(true);
             if (target != null &&
                 (target.IsShouldNotBeTarget() ||
                 target.IsShouldNotBeMonsterTarget()))

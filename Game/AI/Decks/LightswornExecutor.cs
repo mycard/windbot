@@ -103,13 +103,13 @@ namespace WindBot.Game.AI.Decks
 
             AddExecutor(ExecutorType.Summon, CardId.Goblindbergh, GoblindberghSummon);
             AddExecutor(ExecutorType.Summon, CardId.Lumina, LuminaSummon);
-            AddExecutor(ExecutorType.Summon, CardId.Lyla, LylaSummon);
+            AddExecutor(ExecutorType.Summon, CardId.Lyla, LylaSummonFirst);
             AddExecutor(ExecutorType.Summon, CardId.Raiden, RaidenSummon);
             AddExecutor(ExecutorType.Summon, CardId.Minerva, MinervaSummon);
             AddExecutor(ExecutorType.Summon, CardId.Garoth);
+            AddExecutor(ExecutorType.Summon, CardId.Lyla);
             AddExecutor(ExecutorType.Summon, CardId.PerformageTrickClown, Level4ExtenderSummon);
             AddExecutor(ExecutorType.Summon, CardId.ThousandBlades, Level4ExtenderSummon);
-            AddExecutor(ExecutorType.MonsterSet, CardId.Ryko, RykoSet);
 
             AddExecutor(ExecutorType.SpSummon, CardId.EvilswarmExcitonKnight, EvilswarmExcitonKnightSummon);
             AddExecutor(ExecutorType.SpSummon, CardId.TrishulaDragonOfTheIceBarrier, TrishulaSummon);
@@ -124,6 +124,12 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.SpSummon, CardId.PSYFramelordZeta, PSYFramelordZetaSummon);
             AddExecutor(ExecutorType.SpSummon, CardId.PSYFramelordOmega, PSYFramelordOmegaSummon);
             AddExecutor(ExecutorType.SpSummon, CardId.DanteTravelerOfTheBurningAbyss, DanteSummon);
+
+            AddExecutor(ExecutorType.MonsterSet, CardId.Ryko, RykoSet);
+            AddExecutor(ExecutorType.MonsterSet, CardId.PerformageTrickClown);
+            AddExecutor(ExecutorType.MonsterSet, CardId.ThousandBlades);
+            AddExecutor(ExecutorType.MonsterSet, CardId.GlowUpBulb);
+            AddExecutor(ExecutorType.MonsterSet, CardId.Raiden);
 
             AddExecutor(ExecutorType.Repos, DefaultMonsterRepos);
         }
@@ -569,10 +575,9 @@ namespace WindBot.Game.AI.Decks
             return true;
         }
 
-        private bool LylaSummon()
+        private bool LylaSummonFirst()
         {
-            return Enemy.GetSpellCount() > 0 ||
-                Bot.GetMonsters().Any(card => card.IsFaceup() && card.Level == 4);
+            return Enemy.GetSpellCount() > 0;
         }
 
         private bool LylaEffect()
@@ -644,7 +649,7 @@ namespace WindBot.Game.AI.Decks
 
         private bool MinervaEffect()
         {
-            if (ActivateDescription == Util.GetStringId(CardId.Minerva, 0))
+            if (ActivateDescription == -1 || ActivateDescription == Util.GetStringId(CardId.Minerva, 0))
                 AI.SelectCard(CardId.JudgmentDragon);
             return true;
         }
@@ -657,7 +662,6 @@ namespace WindBot.Game.AI.Decks
         private bool ThousandBladesEffect()
         {
             return Card.Location == CardLocation.Grave &&
-                ActivateDescription == Util.GetStringId(CardId.ThousandBlades, 1) &&
                 !DefaultCheckWhetherCardIsNegated(Card);
         }
 
@@ -918,6 +922,8 @@ namespace WindBot.Game.AI.Decks
 
         private bool Number101SilentHonorARKEffect()
         {
+            if (ActivateDescription == 96) return true;
+
             if (DefaultCheckWhetherCardIsNegated(Card))
                 return false;
 

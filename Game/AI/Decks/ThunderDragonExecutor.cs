@@ -1042,6 +1042,7 @@ namespace WindBot.Game.AI.Decks
             if (ActivateDescription == Util.GetStringId(CardId.PredaplantVerteAnaconda, 1))
             {
                 if (DefaultCheckWhetherCardIsNegated(Card)) return false;
+                if (Bot.LifePoints <= 2000) return false;
                 if (!Bot.HasInDeck(CardId.ThunderDragonFusion)) return false;
                 if (Bot.GetMonstersInMainZone().Count > 4 && Bot.GetMonstersInMainZone().Count(card => card != null && !card.IsExtraCard() && card.HasSetcode(0x11c) && card.HasType(CardType.Monster) && card.IsFaceup()) <= 0) return false;
                 List<ClientCard> g_card = Bot.Graveyard.ToList();
@@ -1150,6 +1151,7 @@ namespace WindBot.Game.AI.Decks
         private bool PredaplantVerteAnacondaSummon()
         {
             if (!Bot.HasInDeck(CardId.ThunderDragonFusion)) return false;
+            if (Bot.LifePoints <= 2000) return false;
             List<ClientCard> g_card = Bot.Graveyard.ToList();
             List<ClientCard> b_card = Bot.Banished.ToList();
             g_card.AddRange(b_card);
@@ -1462,9 +1464,7 @@ namespace WindBot.Game.AI.Decks
         }
         private bool UnionCarrierEffect_2()
         { 
-                IList<int> cardsId = new List<int>();
-                cardsId.Add(CardId.ThunderDragonColossus);
-                cardsId.Add(CardId.TheChaosCreator);
+                IList<int> cardsId = new List<int>() { CardId.ThunderDragonColossus, CardId.TheChaosCreator };
                 List<ClientCard> cards_1 = Bot.GetMonsters().Where(card => card != null && card.IsFaceup() && (card.HasAttribute(CardAttribute.Dark) || card.HasRace(CardRace.Dragon))).ToList();
                 if (cards_1.Count <= 0)
                 {
@@ -1629,7 +1629,7 @@ namespace WindBot.Game.AI.Decks
         }
         private bool UnionCarrierSummon()
         {
-            if (!Bot.HasInDeck(CardId.DragonBusterDestructionSword) || !Bot.HasInMonstersZone(CardId.ThunderDragonColossus,false,false,true)) return false;
+            if (!Bot.HasInMonstersZone(CardId.ThunderDragonColossus,false,false,true)) return false;
             return UnionCarrierSummon_2(); 
         }
         private bool LinkCheck(bool exZone_1)
@@ -1687,20 +1687,19 @@ namespace WindBot.Game.AI.Decks
             }
             return true;
         }
+        private bool CanEquipDragonBuster(ClientCard card)
+        {
+             // Check original data
+            return card.IsFaceup() && card.Data != null
+                && (((CardAttribute)card.Data.Attribute & CardAttribute.Dark) != 0
+                    || ((CardRace)card.Data.Race & CardRace.Dragon) != 0);
+        }
         private bool UnionCarrierSummon_2()
         {
-            if (Bot.GetMonsterCount() <= 2 && (Bot.HasInMonstersZone(CardId.ThunderDragonColossus) || Bot.HasInMonstersZone(CardId.ThunderDragonTitan))) return false;
-            List<ClientCard> attDarkCards = Bot.GetMonsters().Where(card => card != null && card.HasAttribute(CardAttribute.Dark) && card.IsFaceup() && !card.IsOriginalCode(CardId.ThunderDragonColossus) && GetLinkMark(card.Id) < 3).ToList();
-            List<ClientCard> attLightCards = Bot.GetMonsters().Where(card => card != null && card.HasAttribute(CardAttribute.Light) && card.IsFaceup() && GetLinkMark(card.Id) < 3).ToList();
-            List<ClientCard> attEarthCards = Bot.GetMonsters().Where(card => card != null && card.HasAttribute(CardAttribute.Earth) && card.IsFaceup() && GetLinkMark(card.Id) < 3).ToList();
-            List<ClientCard> raceThunderCards = Bot.GetMonsters().Where(card => card != null && card.HasRace(CardRace.Thunder) && card.IsFaceup() && !card.IsOriginalCode(CardId.ThunderDragonColossus) && GetLinkMark(card.Id) < 3).ToList();
-            List<ClientCard> raceDragonCards = Bot.GetMonsters().Where(card => card != null && card.HasRace(CardRace.Dragon) && card.IsFaceup() && GetLinkMark(card.Id) < 3).ToList();
-            List<ClientCard> raceBeastCards = Bot.GetMonsters().Where(card => card != null && card.HasRace(CardRace.Beast) && card.IsFaceup() && GetLinkMark(card.Id) < 3).ToList();
-            if (attDarkCards.Count() < 2 && attLightCards.Count() < 2 && attEarthCards.Count() < 2
-                && raceThunderCards.Count() < 2 && raceDragonCards.Count() < 2 && raceBeastCards.Count() < 2)
-                return false;
+            if (!Bot.HasInHand(CardId.DragonBusterDestructionSword) && !Bot.HasInDeck(CardId.DragonBusterDestructionSword)) return false;
             if (!LinkCheck(false) || !LinkCheck(true)) return false;
             if (!IsAvailableLinkZone()) return false;
+            if (Bot.MonsterZone[5] != null && Bot.MonsterZone[5].Controller == 0 && GetLinkMark(Bot.MonsterZone[5].Id) > 1) return false;
             if (Bot.MonsterZone[6] != null && Bot.MonsterZone[6].Controller == 0 && GetLinkMark(Bot.MonsterZone[6].Id) > 1) return false;
             int[] materials = new[] {
                 CardId.StrikerDragon,CardId.BatterymanToken,CardId.BatterymanSolar,
@@ -1711,11 +1710,31 @@ namespace WindBot.Game.AI.Decks
                 CardId.TheChaosCreator,CardId.Linkuriboh,CardId.TheBystialLubellion,
                 CardId.ThunderDragonlord,CardId.PredaplantVerteAnaconda,CardId.IP
             };
-            if (Bot.MonsterZone.GetMatchingCardsCount(card => card.IsCode(materials)) >= 2)
+            List<ClientCard> materialCandidates = new List<ClientCard>();
+            foreach (int materialId in materials)
             {
-                AI.SelectMaterials(materials);
-                summon_UnionCarrier = true;
-                return true;
+                foreach (ClientCard monster in Bot.GetMonsters())
+                {
+                    if (monster.IsFaceup() && monster.IsCode(materialId))
+                        materialCandidates.Add(monster);
+                }
+            }
+            for (int i = 0; i < materialCandidates.Count; ++i)
+            {
+                ClientCard first = materialCandidates[i];
+                for (int j = i + 1; j < materialCandidates.Count; ++j)
+                {
+                    ClientCard second = materialCandidates[j];
+                    bool sameAttribute = (first.Attribute & second.Attribute) != 0;
+                    bool sameRace = (first.Race & second.Race) != 0;
+                    if (!sameAttribute && !sameRace) continue;
+                    if (!Bot.GetMonsters().Any(monster => monster != first && monster != second
+                        && CanEquipDragonBuster(monster))) continue;
+
+                    AI.SelectMaterials(new List<ClientCard> { first, second });
+                    summon_UnionCarrier = true;
+                    return true;
+                }
             }
             return false;
         }
@@ -1915,7 +1934,7 @@ namespace WindBot.Game.AI.Decks
                     mcards.AddRange(grave);
                     mcards.AddRange(banish);
                     int mcount =  mcards.Count(card => card != null && card.HasType(CardType.Monster) && card.HasSetcode(0x11c) && !card.IsCode(CardId.ThunderDragonColossus) && !card.IsCode(CardId.ThunderDragonTitan));
-                    isShoudlSummon_1 =  mcount > 0 ? true : false;
+                    isShoudlSummon_1 = mcount > 0;
                 } 
                 else if(Bot.HasInHand(CardId.TheChaosCreator) && light_count > 0 && dark_count > 0) isShoudlSummon_1 = true;
                 else if (Bot.HasInHand(CardId.ThunderDragonlord) && Bot.Hand.Count(card=>card != null && card.HasType(CardType.Monster) && card.HasSetcode(0x11c))>1) isShoudlSummon_1 = true;
@@ -2049,9 +2068,7 @@ namespace WindBot.Game.AI.Decks
                 AI.SelectCard(CardId.ThunderDragondark);
             else 
             {
-                List<int> cardsid = new List<int>();
-                cardsid.Add(CardId.BlackDragonCollapserpent);
-                cardsid.Add(CardId.TheChaosCreator);
+                List<int> cardsid = new List<int>() { CardId.BlackDragonCollapserpent, CardId.TheChaosCreator };
                 foreach (var card in Bot.Graveyard)
                 {
                     if (card != null && !card.HasSetcode(0x11c) && card.HasAttribute(CardAttribute.Dark))
