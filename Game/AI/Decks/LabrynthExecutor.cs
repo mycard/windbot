@@ -55,12 +55,6 @@ namespace WindBot.Game.AI.Decks
             public const int InspectorBoarder = 15397015;
             public const int SkillDrain = 82732705;
 
-            public const int DimensionShifter = 91800273;
-            public const int MacroCosmos = 30241314;
-            public const int DimensionalFissure = 81674782;
-            public const int BanisheroftheRadiance = 94853057;
-            public const int BanisheroftheLight = 61528025;
-            public const int KashtiraAriseHeart = 48626373;
             public const int AccesscodeTalker = 86066372;
             public const int GhostMournerMoonlitChill = 52038441;
         }
@@ -186,7 +180,6 @@ namespace WindBot.Game.AI.Decks
         bool furnitureActivating = false;
         bool dimensionBarrierAnnouncing = false;
         int banSpSummonExceptFiendCount = 0;
-        int dimensionShifterCount = 0;
         int enemySpSummonFromExLastTurn = 0;
         int enemySpSummonFromExThisTurn = 0;
         bool enemyActivateInfiniteImpermanenceFromHand = false;
@@ -499,28 +492,6 @@ namespace WindBot.Game.AI.Decks
                 if (Enemy.HasInSpellZone(CardId.SkillDrain, true, true)) return true;
             }
             if (disablecheck) return Card.IsDisabled();
-            return false;
-        }
-
-        /// <summary>
-        /// Check whether cards will be removed. If so, do not send cards to grave.
-        /// </summary>
-        public bool CheckWhetherWillbeRemoved()
-        {
-            if (dimensionShifterCount > 0) return true;
-            List<int> checkIdList = new List<int> { CardId.BanisheroftheRadiance, CardId.BanisheroftheLight, CardId.MacroCosmos, CardId.DimensionalFissure,
-                CardId.KashtiraAriseHeart, 58481572 };
-            foreach (int cardid in checkIdList)
-            {
-                List<ClientField> fields = new List<ClientField> { Bot, Enemy };
-                foreach (ClientField cf in fields)
-                {
-                    if (cf.HasInMonstersZone(cardid, true, false, true) || cf.HasInSpellZone(cardid, true, true))
-                    {
-                        return true;
-                    }
-                }
-            }
             return false;
         }
 
@@ -1355,13 +1326,17 @@ namespace WindBot.Game.AI.Decks
         public override int OnSelectOption(IList<int> options)
         {
             // override for cooclock
-            if (options.Count() == 2 && options.Contains(1190) && options.Contains(1152))
+            // 1190/1152 are generic hint messages used by many cards, so confirm the resolving chain
+            ChainInfo currentSolvingChain = Duel.GetCurrentSolvingChainInfo();
+            if (currentSolvingChain != null && currentSolvingChain.ActivatePlayer == 0
+                && currentSolvingChain.IsActivateCode(CardId.LabrynthCooclock)
+                && options.Count() == 2 && options.Contains(1190) && options.Contains(1152))
             {
                 // 1190=Add to Hand, 1152=Special Summon
                 // return to hand to activate trap set this turn
                 bool canLink = Duel.Player == 0 && Duel.Phase <= DuelPhase.Main2;
                 if (!canLink && !Bot.HasInHand(CardId.LabrynthCooclock) && Bot.GetMonsters().Any(card => card.IsFaceup() && card.HasSetcode(SetcodeLabrynth))
-                    && !activatedCardIdList.Contains(CardId.LabrynthCooclock) && !CheckWhetherWillbeRemoved()
+                    && !activatedCardIdList.Contains(CardId.LabrynthCooclock) && !DefaultCheckWhetherBotWillBeBanished(CardType.Monster, CardLocation.Hand)
                     && (activatedCardIdList.Contains(CardId.BigWelcomeLabrynth) || Bot.GetSpells().All(card => setTrapThisTurn.Contains(card) || !card.IsCode(CardId.BigWelcomeLabrynth)))
                     && setTrapThisTurn.Any(card => card.IsFacedown() && card.IsCode(CardId.BigWelcomeLabrynth, _CardId.DimensionalBarrier, _CardId.InfiniteImpermanence, CardId.DestructiveDarumaKarmaCannon)))
                 {
@@ -1579,8 +1554,6 @@ namespace WindBot.Game.AI.Decks
         {
             if (Duel.Turn <= 1)
             {
-                dimensionShifterCount = 0;
-
                 enemySpSummonFromExLastTurn = 0;
                 enemySpSummonFromExThisTurn = 0;
                 banSpSummonExceptFiendCount = 0;
@@ -1589,7 +1562,6 @@ namespace WindBot.Game.AI.Decks
             enemySpSummonFromExThisTurn = 0;
             rollbackCopyCardId = 0;
 
-            if (dimensionShifterCount > 0) dimensionShifterCount--;
             if (banSpSummonExceptFiendCount > 0) banSpSummonExceptFiendCount--;
             infiniteImpermanenceList.Clear();
 
@@ -1638,11 +1610,6 @@ namespace WindBot.Game.AI.Decks
             ChainInfo currentChain = Duel.GetCurrentSolvingChainInfo();
             if (currentChain != null && !Duel.IsCurrentSolvingChainNegated())
             {
-                if (currentChain.ActivatePlayer == 1)
-                {
-                    if (currentChain.IsActivateCode(CardId.DimensionShifter))
-                        dimensionShifterCount = 2;
-                }
                 if (currentChain.ActivatePlayer == 0)
                 {
                     if (currentChain.IsActivateCode(CardId.LabrynthCooclock))
@@ -1936,7 +1903,7 @@ namespace WindBot.Game.AI.Decks
 
             // sp summon
             if (Bot.HasInSpellZone(CardId.TransactionRollback) && GetEmptyMainMonsterZoneCount() > chainSummoningIdList.Count()
-                    && !CheckWhetherWillbeRemoved() && !CheckShouldNoMoreSpSummon(CardLocation.Hand, false))
+                    && !DefaultCheckWhetherBotWillBeBanished(CardType.Trap, CardLocation.SpellZone) && !CheckShouldNoMoreSpSummon(CardLocation.Hand, false))
             {
                 AI.SelectCard(CardId.TransactionRollback);
                 activatedCardIdList.Add(Card.Id);
@@ -2074,9 +2041,10 @@ namespace WindBot.Game.AI.Decks
                 return true;
             }
             // for activate effect
-            if (!activatedCardIdList.Contains(Card.Id) && !CheckWhetherNegated(true, true) && !CheckWhetherWillbeRemoved())
+            if (!activatedCardIdList.Contains(Card.Id) && !CheckWhetherNegated(true, true))
             {
-                bool haveCost = Bot.Hand.Any(card => card.Type == (int)CardType.Trap) || Bot.GetSpells().Any(card => card.IsFacedown() && card.Type == (int)CardType.Trap);
+                bool haveCost = Bot.Hand.Any(card => card.Type == (int)CardType.Trap && !DefaultCheckWhetherBotWillBeBanished(card))
+                    || Bot.GetSpells().Any(card => card.IsFacedown() && card.Type == (int)CardType.Trap && !DefaultCheckWhetherBotWillBeBanished(card));
                 if (haveCost && !CheckShouldNoMoreSpSummon(CardLocation.Hand | CardLocation.Deck))
                 {
                     summoned = true;
@@ -2089,7 +2057,9 @@ namespace WindBot.Game.AI.Decks
         public bool ArianeTheLabrynthServantForRollbackSummon()
         {
             if (activatedCardIdList.Contains(Card.Id)) return false;
-            if (Bot.HasInHandOrInSpellZone(CardId.TransactionRollback) && !CheckWhetherWillbeRemoved())
+            bool haveCost = Bot.Hand.Any(card => card.IsCode(CardId.TransactionRollback) && !DefaultCheckWhetherBotWillBeBanished(card))
+                || Bot.GetSpells().Any(card => card.IsFacedown() && card.IsCode(CardId.TransactionRollback) && !DefaultCheckWhetherBotWillBeBanished(card));
+            if (haveCost)
             {
                 summoned = true;
                 return true;
@@ -2373,7 +2343,7 @@ namespace WindBot.Game.AI.Decks
 
         public bool ShouldSetBigWelcome(bool checkArianna = true)
         {
-            if (CheckWhetherWillbeRemoved()) return false;
+            if (DefaultCheckWhetherBotWillBeBanished()) return false;
             bool shouldTriggerBigWelcomeFlag = GetProblematicEnemyCardList(false).Count() > 0;
             shouldTriggerBigWelcomeFlag |= Duel.Player == 1 && Duel.Phase > DuelPhase.Main2;
             shouldTriggerBigWelcomeFlag |= Duel.Player == 1 && GetProblematicEnemyCardList(false).Count() == 0 && GetProblematicEnemyMonster(selfType: CardType.Monster) == null

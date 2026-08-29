@@ -311,7 +311,12 @@
       },
       {
         "name": "偷摸灵兽幽灵",
-        "deck": "RadiantTyphoon",
+        "deck": "ChaosRitual",
+        "dialog": "soyorin.zh-TW"
+      },
+      {
+        "name": "偷摸灵兽幽灵",
+        "deck": "ChaosRitual",
         "dialog": "soyorin.zh-TW"
       }
     ]
