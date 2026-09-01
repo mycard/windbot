@@ -2,6 +2,11 @@
 
 ## Current (latest)
 
+ - Add `Util.GetLinkMaterials`, `Util.CanMakeLinkRating`, and `ClientField.GetFaceupMonsters`, and reuse them across deck AIs
+ - Add `Executor.OnPosChange`, `ClientField.HasInPendulumZone`, and `DefaultCheckWhetherBotWillBeBanished`; expand graveyard-to-banish redirect checks across deck AIs
+ - Reduce unnecessary Witchcraft combos under Maxx "C" and Mulcharmy effects, and fix its deck Special Summon selection
+ - Add `ChainInfo.Announces` and `ChainInfo.HasAnnounce`, and use them to track Lightning Storm's selected effect
+ - New deck: ChaosRitual (Ritual of Light and Darkness)
  - Reuse shared search and draw restriction checks across deck AIs, including Droll & Lock Bird handling
  - Improve RadiantTyphoon's combo sequencing, Quick-Play effect selection, and material choices
  - Add deck-specific tribute selection and pass mandatory cards to sum/material selection callbacks
